@@ -8,10 +8,10 @@ import { checkLoggedIn } from '../common/auth';
  * @param {{ description: String }}
  * @throws Will throw an error if user is not logged in.
  */
-const insertTask = ({ description }) => {
+const insertTask = async ({ description }) => {
   check(description, String);
   checkLoggedIn();
-  TasksCollection.insert({
+  await TasksCollection.insertAsync({
     description,
     userId: Meteor.userId(),
     createdAt: new Date(),
@@ -23,10 +23,10 @@ const insertTask = ({ description }) => {
  * @param {{ taskId: String }}
  * @throws Will throw an error if user is not logged in or is not the task owner.
  */
-const checkTaskOwner = ({ taskId }) => {
+const checkTaskOwner = async ({ taskId }) => {
   check(taskId, String);
   checkLoggedIn();
-  const task = TasksCollection.findOne({
+  const task = await TasksCollection.findOneAsync({
     _id: taskId,
     userId: Meteor.userId(),
   });
@@ -40,9 +40,9 @@ const checkTaskOwner = ({ taskId }) => {
  * @param {{ taskId: String }}
  * @throws Will throw an error if user is not logged in or is not the task owner.
  */
-export const removeTask = ({ taskId }) => {
-  checkTaskOwner({ taskId });
-  TasksCollection.remove(taskId);
+export const removeTask = async ({ taskId }) => {
+  await checkTaskOwner({ taskId });
+  await TasksCollection.removeAsync({ _id: taskId });
 };
 
 /**
@@ -50,10 +50,13 @@ export const removeTask = ({ taskId }) => {
  * @param {{ taskId: String }}
  * @throws Will throw an error if user is not logged in or is not the task owner.
  */
-const toggleTaskDone = ({ taskId }) => {
-  checkTaskOwner({ taskId });
-  const task = TasksCollection.findOne(taskId);
-  TasksCollection.update({ _id: taskId }, { $set: { done: !task.done } });
+const toggleTaskDone = async ({ taskId }) => {
+  await checkTaskOwner({ taskId });
+  const task = await TasksCollection.findOneAsync(taskId);
+  await TasksCollection.updateAsync(
+    { _id: taskId },
+    { $set: { done: !task.done } }
+  );
 };
 
 /**
