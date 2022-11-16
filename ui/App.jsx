@@ -1,30 +1,23 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import {
-  ColorModeScript,
-  extendTheme,
-  ChakraProvider,
-  Box,
-} from '@chakra-ui/react';
-import { Navbar } from './common/Navbar';
-import { Footer } from './common/Footer';
+import { BrowserRouter, Routes as ReactRoutes, Route } from 'react-router-dom';
+import React, { Suspense } from 'react';
+import { Spinner } from '@chakra-ui/react';
+import { Layout } from './lib/Layout';
+import { RoutePaths } from './lib/RoutePaths';
 
-const theme = extendTheme({
-  config: {
-    initialColorMode: 'dark',
-    useSystemColorMode: false,
-  },
-});
+const LoginPage = React.lazy(() => import('./auth/LoginPage'));
+const TasksPage = React.lazy(() => import('./tasks/TasksPage'));
+const NotFoundPage = React.lazy(() => import('./lib/NotFoundPage'));
 
 export const App = () => (
-  <>
-    <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-    <ChakraProvider theme={theme}>
-      <Navbar />
-      <Box maxW="6xl" mx="auto">
-        <Outlet />
-      </Box>
-      <Footer />
-    </ChakraProvider>
-  </>
+  <Suspense fallback={<Spinner />}>
+    <BrowserRouter>
+      <ReactRoutes>
+        <Route path={RoutePaths.ROOT} element={<Layout />}>
+          <Route element={<LoginPage />} index />
+          <Route element={<TasksPage />} path={RoutePaths.TASKS} />
+          <Route element={<NotFoundPage />} path="*" />
+        </Route>
+      </ReactRoutes>
+    </BrowserRouter>
+  </Suspense>
 );

@@ -1,5 +1,4 @@
-import { Meteor } from 'meteor/meteor';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FormControl,
   Input,
@@ -9,54 +8,50 @@ import {
   InputGroup,
   InputRightElement,
 } from '@chakra-ui/react';
-import { object, string } from 'yup';
-import { useFormik } from 'formik';
-import { ErrorStatus } from '../common/ErrorStatus';
+import { ErrorStatus } from '../lib/ErrorStatus';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { insertTask } from '../../api/tasks/tasks.mutations';
 
 export const TaskForm = () => {
-  const validationSchema = object({
-    description: string('Enter task description').required(
-      'Task description is required'
-    ),
+  const [errorMessage, setErrorMessage] = useState('');
+  const schema = z.object({
+    description: z.string().min(1, 'Task description is required'),
   });
 
-  const onSubmit = (values, actions) => {
+  const {
+    handleSubmit,
+    register,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(schema) });
+
+  const onSubmit = async values => {
     const description = values.description.trim();
-    Meteor.call('insertTask', { description }, err => {
-      if (err) {
-        const errorMessage = err?.reason || 'Sorry, please try again.';
-        actions.setStatus(errorMessage);
-      } else {
-        actions.resetForm();
-      }
-      actions.setSubmitting(false);
-    });
+    try {
+      await insertTask({ description });
+      reset();
+    } catch (err) {
+      const reason = err?.reason || 'Sorry, please try again.';
+      setErrorMessage(reason);
+    }
   };
-
-  const formik = useFormik({
-    initialValues: { description: '' },
-    initialStatus: null,
-    validationSchema,
-    onSubmit,
-  });
 
   return (
     <Box>
-      <ErrorStatus status={formik.status} />
-      <form onSubmit={formik.handleSubmit}>
+      <ErrorStatus status={errorMessage} />
+      <form onSubmit={handleSubmit(onSubmit)}>
         <InputGroup size="md">
-          <FormControl
-            isInvalid={formik.errors.description && formik.touched.description}
-          >
+          <FormControl isInvalid={!!errors.description}>
             <Input
               h="2.6rem"
               pr="6rem"
-              name="description"
-              onChange={formik.handleChange}
-              value={formik.values.description}
+              id="description"
+              {...register('description')}
               placeholder="Type to add new tasks"
             />
-            <FormErrorMessage>{formik.errors.description}</FormErrorMessage>
+            <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
           </FormControl>
           <InputRightElement width="6rem">
             <Button
@@ -65,7 +60,7 @@ export const TaskForm = () => {
               bg="blue.600"
               color="white"
               type="submit"
-              isLoading={formik.isSubmitting}
+              isLoading={isSubmitting}
               colorScheme="blue"
             >
               Add Task
